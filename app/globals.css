@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Command-center dark navy surface */
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 44% 11%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 44% 11%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Deep blue primary */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 222 40% 16%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 222 38% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 96%;
+
+    --border: 222 32% 20%;
+    --input: 222 32% 22%;
+    --ring: 217 91% 60%;
+
+    /* Risk severity palette */
+    --risk-critical: 0 72% 51%;
+    --risk-high: 24 88% 52%;
+    --risk-moderate: 43 96% 56%;
+    --risk-low: 142 71% 45%;
+    --info: 199 89% 48%;
+
+    /* Chart palette */
+    --chart-1: 217 91% 60%;
+    --chart-2: 0 72% 51%;
+    --chart-3: 24 88% 52%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 142 71% 45%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  /* Thin, dark scrollbars to match the command-center theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  /* MapLibre container must always have an explicit height */
+  .maplibregl-map,
+  .maplibregl-canvas {
+    font: inherit;
+  }
+  .map-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .map-container .maplibregl-ctrl-attrib {
+    background: rgba(15, 23, 42, 0.6);
+    color: hsl(var(--muted-foreground));
+  }
+  .map-container .maplibregl-ctrl-attrib a {
+    color: hsl(var(--accent));
+  }
+  /* Pulsing marker animation for critical facilities */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(1.8);
+      opacity: 0;
+    }
+  }
+  .pulse-marker::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: inherit;
+    animation: pulse-ring 2s ease-out infinite;
+  }
+}
