@@ -14,11 +14,13 @@ import { FacilityLayer } from './FacilityLayer';
 import { RiskLayer } from './RiskLayer';
 import { RouteLayer } from './RouteLayer';
 import { MapLegend } from './MapLegend';
+import { SARFloodLayer } from './SARFloodLayer';
 import { getMapStyle } from '@/lib/map/config';
 import type { FloodZone } from '@/types/flood';
 import type { Road } from '@/types/road';
 import type { Facility } from '@/types/facility';
 import type { Route } from '@/types/response';
+import type { GeoJSONFeatureCollection } from '@/types/satellite';
 import { cn } from '@/lib/utils';
 
 interface DisasterMapProps {
@@ -36,7 +38,10 @@ interface DisasterMapProps {
   interactive?: boolean;
   floodCentroid?: [number, number];
   overlayLabel?: string;
+  /** Real SAR flood GeoJSON from Earth Engine — rendered as blue overlay */
+  sarFloodGeoJSON?: GeoJSONFeatureCollection | null;
 }
+
 
 export function DisasterMap({
   center,
@@ -53,7 +58,9 @@ export function DisasterMap({
   interactive = true,
   floodCentroid,
   overlayLabel = 'Sentinel-1 SAR · Simulated overlays',
+  sarFloodGeoJSON,
 }: DisasterMapProps) {
+
   const [hoveredRoadId, setHoveredRoadId] = useState<string | null>(null);
 
   const handleRoadClick = useCallback(
@@ -90,6 +97,12 @@ export function DisasterMap({
         <ScaleControl position="bottom-left" unit="metric" />
 
         <FloodLayer zones={floodZones} />
+
+        {/* Real SAR flood detection layer — rendered on top of demo overlays */}
+        {sarFloodGeoJSON && (
+          <SARFloodLayer geojson={sarFloodGeoJSON} visible={sarFloodGeoJSON.features.length > 0} />
+        )}
+
         <RoadLayer
           roads={roads}
           selectedRoadId={selectedRoadId ?? hoveredRoadId ?? undefined}
@@ -130,9 +143,12 @@ export function DisasterMap({
       </Map>
 
       {showLegend && (
-        <MapLegend className="absolute bottom-3 right-3 z-10" compact />
+        <MapLegend
+          className="absolute bottom-3 right-3 z-10"
+          compact
+          showSarFlood={!!(sarFloodGeoJSON && sarFloodGeoJSON.features.length > 0)}
+        />
       )}
-
       <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-border bg-card/95 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-lg backdrop-blur">
         {overlayLabel}
       </div>

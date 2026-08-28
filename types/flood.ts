@@ -6,7 +6,8 @@ export interface FloodZone {
   riskLevel: RiskLevel;
   areaKm2: number;
   confidence: number;
-  dataSource: 'demo' | 'satellite';
+  dataSource: 'demo' | 'satellite' | 'real';
+
   geometry: {
     type: 'Polygon';
     coordinates: [number, number][][];

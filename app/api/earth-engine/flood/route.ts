@@ -1,8 +1,35 @@
+<<<<<<< HEAD
 import { NextResponse } from 'next/server';
+=======
+﻿/**
+ * app/api/earth-engine/flood/route.ts
+ *
+ * GET  /api/earth-engine/flood?area=<id>
+ *   Legacy endpoint — used by the Dashboard. Returns the existing single-image
+ *   thresholding result for backwards compatibility.
+ *
+ * POST /api/earth-engine/flood
+ *   New real bi-temporal change-detection endpoint — used by the Flood Analysis page.
+ *   Body: FloodDetectionParams (JSON)
+ *   Returns: RealFloodDetectionResponse
+ *
+ * Authentication is handled inside each lib function.
+ * Neither endpoint falls back to fake/demo values on error.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { runFloodAnalysis } from '@/lib/earthengine/sangliFloodAnalysis';
+import { getStudyArea } from '@/lib/earthengine/studyAreas';
+import { runRealFloodDetection } from '@/lib/earthengine/realFloodDetection';
+import type { FloodDetectionParams } from '@/lib/earthengine/realFloodDetection';
+>>>>>>> fab0acf (adding SAR)
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+// Allow up to 120 seconds for EE processing
+export const maxDuration = 120;
 
+<<<<<<< HEAD
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -98,8 +125,106 @@ export async function GET() {
       {
         ...OFFLINE_RESULT,
         error: `Edge Function unreachable: ${message}. Showing verified offline result.`,
+=======
+// ---------------------------------------------------------------------------
+// GET — Legacy / Dashboard endpoint
+// ---------------------------------------------------------------------------
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const areaId = searchParams.get('area') || searchParams.get('id') || 'sangli';
+  const studyArea = getStudyArea(areaId);
+
+  try {
+    const result = await runFloodAnalysis(studyArea.id);
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown server error';
+    return NextResponse.json(
+      {
+        areaId: studyArea.id,
+        source: 'Google Earth Engine / Sentinel-1',
+        satellite: 'Sentinel-1',
+        sensor: 'SAR',
+        location: studyArea.name,
+        region: studyArea.region,
+        date: studyArea.floodDate,
+        acquisition: `${studyArea.floodDate} 00:55 UTC`,
+        relativeOrbit: studyArea.relativeOrbit,
+        orbitDirection: studyArea.orbitDirection === 'DESCENDING' ? 'Descending' : 'Ascending',
+        polarization: studyArea.polarization,
+        thresholdDb: studyArea.thresholdDb,
+        potentialFloodedAreaKm2: studyArea.estimatedAreaKm2,
+        centroid: { longitude: studyArea.centerLon, latitude: studyArea.centerLat },
+        analysisType: 'SAR-based potential flood mask',
+        preFloodComparisonAvailable: false,
+        live: false,
+        disclaimer: 'Server error occurred. Showing area metadata only.',
+        error: `Server error: ${message}`,
+>>>>>>> fab0acf (adding SAR)
       },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST — Real bi-temporal change-detection endpoint
+// ---------------------------------------------------------------------------
+export async function POST(request: NextRequest) {
+  let body: Partial<FloodDetectionParams>;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'Invalid JSON body.' },
+      { status: 400 }
+    );
+  }
+
+  // Validate required fields
+  const { areaId, preStartDate, preEndDate, postStartDate, postEndDate } = body;
+
+  if (!areaId) {
+    return NextResponse.json(
+      { success: false, error: 'Missing required field: areaId' },
+      { status: 400 }
+    );
+  }
+  if (!preStartDate || !preEndDate || !postStartDate || !postEndDate) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Missing required date fields: preStartDate, preEndDate, postStartDate, postEndDate',
+      },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const result = await runRealFloodDetection({
+      areaId,
+      preStartDate,
+      preEndDate,
+      postStartDate,
+      postEndDate,
+      polarization: body.polarization ?? 'VV',
+      threshold: typeof body.threshold === 'number' ? body.threshold : -1.5,
+      minAreaM2: typeof body.minAreaM2 === 'number' ? body.minAreaM2 : 100000,
+    });
+
+    // Return 200 even for application-level errors so the client can read the error field
+    return NextResponse.json(result, {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown server error';
+    return NextResponse.json(
+      { success: false, live: false, error: `Unexpected server error: ${message}` },
+      { status: 500 }
     );
   }
 }

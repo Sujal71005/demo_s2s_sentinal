@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 interface MapLegendProps {
   className?: string;
   compact?: boolean;
+  showSarFlood?: boolean;
 }
 
 interface LegendItem {
@@ -20,7 +21,15 @@ const legendItems: LegendItem[] = [
   { label: 'Road Network', color: 'hsl(var(--muted-foreground))', shape: 'line' },
 ];
 
-export function MapLegend({ className, compact }: MapLegendProps) {
+const sarFloodItem: LegendItem = {
+  label: 'SAR Flood Detection (Sentinel-1)',
+  color: '#2563eb',
+  shape: 'square',
+};
+
+export function MapLegend({ className, compact, showSarFlood = false }: MapLegendProps) {
+  const items = showSarFlood ? [sarFloodItem, ...legendItems] : legendItems;
+
   return (
     <div
       className={cn(
@@ -38,7 +47,7 @@ export function MapLegend({ className, compact }: MapLegendProps) {
         Legend
       </h3>
       <ul className="space-y-1.5">
-        {legendItems.map((item) => (
+        {items.map((item) => (
           <li key={item.label} className="flex items-center gap-2">
             <span
               className="inline-block shrink-0"
@@ -65,3 +74,4 @@ export function MapLegend({ className, compact }: MapLegendProps) {
     </div>
   );
 }
+
